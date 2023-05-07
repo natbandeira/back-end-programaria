@@ -11,7 +11,7 @@ function mostraMulher (request, response) {
         minibio: 'Tracy Chapman é uma cantora estadunidense de folk, blues, soul e pop rock, vencedora de 4 prêmios Grammy Awards, tornada mundialmente famosa por suas canções "Fast Car", "Baby Can I Hold You" e "Give Me One Reason".'
     })
 }
-app.use(express.json())
+app.use(express.json());
 
 const mostraPorta = () => console.log(`Servidor criado e rodando na porta ${porta}`);
 

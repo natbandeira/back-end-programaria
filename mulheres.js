@@ -1,35 +1,96 @@
-const express = require('express');
-const router = express.Router();
+const express = require('express'); // iniciando express
+const router = express.Router(); // configurando 1ª parte da rota
+const cors = require('cors'); // trazendo o pacote cors: permite consumir essa API no frontend
 
-const app = express();
-const porta = 3333;
 
-const mulheres = [
-    {
-        nome: 'Tracy Chapman',
-        imagem: 'https://bit.ly/tracyChapman',
-        minibio: 'Tracy Chapman é uma cantora estadunidense de folk, blues, soul e pop rock, vencedora de 4 prêmios Grammy Awards, tornada mundialmente famosa por suas canções "Fast Car", "Baby Can I Hold You" e "Give Me One Reason".'
-    },
-    {
-        nome: 'Iza Sabino',
-        imagem: 'https://bit.ly/izaSabino',
-        minibio: 'Iza Sabino é uma rapper mineira que reflete sobre vivências LGBTQIA+ e racismo com discurso empoderador em músicas. Em tempos de instabilidade social e política, falar de amor é um ato de resistência. E, quando essa mensagem parte de uma mulher negra LGBTQIA+, isso se torna ainda maior.'
-    },
-    {
-        nome: 'Glória Maria',
-        imagem: 'https://bit.ly/gloriaMaria',
-        minibio: 'Glória Maria Matta da Silva foi uma jornalista, repórter e apresentadora de televisão brasileira. Considerada um dos maiores símbolos do jornalismo brasileiro, foi a primeira repórter a realizar matérias ao vivo e a cores na televisão no Brasil.'
+const conectaBanco = require('./bancoDeDados'); // conectando ao arquivo bandoDeDados.js
+conectaBanco(); // chamando função (do arquivo conectado acima) que conecta o banco de dados
+
+const Mulher = require('./mulherModel'); // conecta a Model
+
+const app = express(); // iniciando app
+app.use(express.json()); // configurando formato JSON
+app.use(cors());
+
+const porta = 3333; // criando porta
+
+// GET
+async function mostraMulheres(request, response) {
+    try {
+        const mulheresVindasDoBanco = await Mulher.find();
+
+        response.json(mulheresVindasDoBanco);
+
+    }catch(erro){
+        console.log(erro);
     }
-];
-
-function mostraMulheres(request, response) {
-    response.json(mulheres);
 }
 
+// POST
+async function criaMulher(request, response) {
+    const novaMulher = new Mulher({
+        nome: request.body.nome,
+        imagem: request.body.imagem,
+        minibio: request.body.minibio,
+        citacao: request.body.citacao
+    })
+
+    try {
+        const mulherCriada = await novaMulher.save();
+        response.status(201).json(mulherCriada);   
+    } catch(error) {
+        console.log(error);
+}
+}
+// PATCH
+async function corrigeMulher(request, response) {
+    try {
+        const mulherEncontrada =  await Mulher.findById(request.params.id); // parametros são passadas na URL
+
+        //procurando qual objeto foi alterado e atualizando seu valor, qnd encontrado
+        if (request.body.nome) {
+            mulherEncontrada.nome = request.body.nome;
+        }
+    
+        if (request.body.imagem) {
+            mulherEncontrada.imagem = request.body.imagem;
+        }
+    
+        if (request.body.minibio) {
+            mulherEncontrada.minibio = request.body.minibio;
+        }
+
+        if (request.body.citacao){
+            mulherEncontrada.citacao = request.body.citacao;
+        }
+
+        const mulherAtualizadaNoBancoDeDados = await mulherEncontrada.save(); // salvando no banco de dados o novo valor de mulherEncontrada
+        response.json(mulherAtualizadaNoBancoDeDados); // enviando em JSON a variável
+
+    } catch(error) {
+        console.log(error);
+    }
+}
+
+// DELETE
+async function deletaMulher(request, response) {
+    try {
+        await Mulher.findByIdAndDelete(request.params.id);
+        response.json({ mensagem : 'Mulher deletada com sucesso!'})
+    } catch (erro) {
+        console.error(erro);
+    }
+}
+
+// PORTA
 const mostraPorta = () => console.log(`Servidor criado e rodando na porta ${porta}`);
 
-app.use(router.get('/mulheres', mostraMulheres))
-app.listen(porta, mostraPorta);
+// 2ª configuração de rotas 
+app.use(router.get('/mulheres', mostraMulheres)); 
+app.use(router.post('/mulheres', criaMulher)); 
+app.use(router.patch('/mulheres/:id', corrigeMulher));
+app.use(router.delete('/mulheres/:id', deletaMulher));
+app.listen(porta, mostraPorta); // servidor ouvindo porta
 
 // mostraPorta();
 
